@@ -5,24 +5,13 @@ import { Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DeleteModal from "../component/DeleteModal";
 
-const showSuccessToast = () => {
-  toast.success(
-    <motion.div
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-      style={{ display: "flex", alignItems: "center", gap: "10px" }}
-    >
-      <CheckCircleIcon color="success" />
-      User Deleted Successfully!
-    </motion.div>,
-    { icon: null }
-  );
-};
 //rerte
 const User = () => {
   const [users, setUsers] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,13 +25,21 @@ const User = () => {
     fetchData();
   }, []);
 
-  const deleteUser = async (userId) => {
-    try {
-      await axios.delete(`http://localhost:8000/api/delete/user/${userId}`);
-      setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
+  const handleDeleteClick = (userId) => {
+    setUserToDelete(userId);
+    setDeleteModalOpen(true);
+  };
 
-      // Show success toast
-      showSuccessToast();
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      await axios.delete(
+        `http://localhost:8000/api/delete/user/${userToDelete}`,
+      );
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user._id !== userToDelete),
+      );
+      toast.success("User deleted successfully!");
     } catch (error) {
       toast.error("Error deleting user");
     }
@@ -55,6 +52,16 @@ const User = () => {
       <Link to="/add" type="button" className="btn btn-success">
         <i className="fa-solid fa-user-plus"></i> Add User
       </Link>
+
+      <DeleteModal
+        open={deleteModalOpen}
+        itemName="user"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setUserToDelete(null);
+        }}
+      />
 
       {users.length === 0 ? (
         <div className="noData">
@@ -83,15 +90,13 @@ const User = () => {
                   <Link
                     to={`/update/${user._id}`}
                     type="button"
-                    className="btn btn-primary"
-                  >
+                    className="btn btn-primary">
                     <i className="fa-solid fa-pen-to-square"></i>
                   </Link>
                   <button
-                    onClick={() => deleteUser(user._id)}
+                    onClick={() => handleDeleteClick(user._id)}
                     type="button"
-                    className="btn btn-danger"
-                  >
+                    className="btn btn-danger">
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </td>
